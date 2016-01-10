@@ -4,10 +4,11 @@ txtrst='\e[0m'    # Text Reset
 txtylw='\e[0;33m' # Yellow
 bldgrn='\e[1;32m' # Bold Green
 bldred='\e[1;31m' # Bold Red
-scriptname = basename "$0"
-echo "Running $scriptname"
-echo 
-usage = "
+
+
+scriptname="$(basename "$0")"
+
+usage="
 Usage: $scriptname [--help] <user/email> <service/domain>
 
 Options:
@@ -20,12 +21,11 @@ Arguments:
 Examples:
 $scriptname luke github.com
 
-
 "
 
-if [[ "$1" == "--help" ]]
-  echo $usage
-  exit 0
+if [[ "$1" == "--help" ]]; then
+  echo "$usage";
+  exit 0;
 fi
 
 emailaddr=$1
@@ -33,14 +33,19 @@ service=$2
 
 nullmfakey=$(oathtool --base32 --totp "")
 mfakey=$(oathtool --base32 --totp "$(secret-tool lookup username "${emailaddr}" service "${service}")")
+
 if [[ "$emailaddr" == "" ]]; then
-  echo "No user/email provided to identify the key, please see $0 --help"
+  echo -e "${bldred}Error:${txtrst} No user/email provided to identify the key."
+  echo "$usage";
   exit 1;
 fi
+
 if [[ "$service" == "" ]]; then
-  echo "No service/domain name provided to identify the key, please see $0 --help"
+  echo "${bldred}Error:${txtrst} No service/domain name provided to identify the key."
+  echo "$usage";
   exit 2;
 fi
+
 if [[ $nullmfakey == "$mfakey" ]]; then
   echo -e "${bldred}Not Found:${txtrst} no MFA key found in keychain for ${txtylw}${emailaddr}${txtrst}@${txtylw}${service}${txtrst}"; 
   exit 3;
