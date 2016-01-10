@@ -1,0 +1,50 @@
+#!/bin/bash
+
+txtrst='\e[0m'    # Text Reset
+txtylw='\e[0;33m' # Yellow
+bldgrn='\e[1;32m' # Bold Green
+bldred='\e[1;31m' # Bold Red
+scriptname = basename "$0"
+echo "Running $scriptname"
+echo 
+usage = "
+Usage: $scriptname [--help] <user/email> <service/domain>
+
+Options:
+ --help  show this help/usage
+
+Arguments:
+ <user/email> *required: the username or email address that identifies the key you want to use for the mfatool
+ <service/domain> *required: the identifying service name or domain that the key is for
+
+Examples:
+$scriptname luke github.com
+
+
+"
+
+if [[ "$1" == "--help" ]]
+  echo $usage
+  exit 0
+fi
+
+emailaddr=$1
+service=$2
+
+nullmfakey=$(oathtool --base32 --totp "")
+mfakey=$(oathtool --base32 --totp "$(secret-tool lookup username "${emailaddr}" service "${service}")")
+if [[ "$emailaddr" == "" ]]; then
+  echo "No user/email provided to identify the key, please see $0 --help"
+  exit 1;
+fi
+if [[ "$service" == "" ]]; then
+  echo "No service/domain name provided to identify the key, please see $0 --help"
+  exit 2;
+fi
+if [[ $nullmfakey == "$mfakey" ]]; then
+  echo -e "${bldred}Not Found:${txtrst} no MFA key found in keychain for ${txtylw}${emailaddr}${txtrst}@${txtylw}${service}${txtrst}"; 
+  exit 3;
+
+else
+  echo -e "MFA token for ${txtylw}${emailaddr}${txtrst} @ ${txtylw}${service}${txtrst} : ${bldgrn}$(oathtool --base32 --totp "$(secret-tool lookup username "${emailaddr}" service "${service}")")${txtrst}"
+fi
