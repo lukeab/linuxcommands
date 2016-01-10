@@ -9,30 +9,51 @@ bldred='\e[1;31m' # Bold Red
 scriptname="$(basename "$0")"
 
 usage="
+
+LAB mfatool
+Tool for managing multifactor authentication tokens through with the security of secret-tool and the keychain
+
 Usage: $scriptname [--help] <user/email> <service/domain>
 
 Options:
- --help  show this help/usage
+ --help|-h        show this help/usage
+ --list           List all keys in the secret-tool keychain managed by lab mfatool
+ --store          store a value into the keychain (uses secret-tool to write to the keychain), you will be prompted for a password by the secret-tool
 
 Arguments:
- <user/email> *required: the username or email address that identifies the key you want to use for the mfatool
+ <user/email>     *required: the username or email address that identifies the key you want to use for the mfatool
  <service/domain> *required: the identifying service name or domain that the key is for
 
 Examples:
-$scriptname luke github.com
+ $scriptname --help
+ $scriptname luke github.com
+ $scriptname --store luke github.com
 
 "
 
-if [[ "$1" == "--help" ]]; then
+if [[ "$1" == "--help"||"$1" == "-h" ]]; then
   echo "$usage";
   exit 0;
 fi
 
+if [[ "$1" == "--list" ]]; then
+	secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}'
+
+	exit 0;
+fi
+
+
 emailaddr=$1
 service=$2
 
+if [[ "$1" == "--store" ]]; then
+	emailaddr=$2
+  service=$3
+fi
+
+
 nullmfakey=$(oathtool --base32 --totp "")
-mfakey=$(oathtool --base32 --totp "$(secret-tool lookup username "${emailaddr}" service "${service}")")
+
 
 if [[ "$emailaddr" == "" ]]; then
   echo -e "${bldred}Error:${txtrst} No user/email provided to identify the key."
@@ -46,10 +67,16 @@ if [[ "$service" == "" ]]; then
   exit 2;
 fi
 
-if [[ $nullmfakey == "$mfakey" ]]; then
-  echo -e "${bldred}Not Found:${txtrst} no MFA key found in keychain for ${txtylw}${emailaddr}${txtrst}@${txtylw}${service}${txtrst}"; 
-  exit 3;
-
+if [[ "$1" == "--store" ]]; then
+  secret-tool store --label "${emailaddr}@${service}" labmfatool 2016_01_10 username "${emailaddr}" service "${service}"
 else
-  echo -e "MFA token for ${txtylw}${emailaddr}${txtrst} @ ${txtylw}${service}${txtrst} : ${bldgrn}$(oathtool --base32 --totp "$(secret-tool lookup username "${emailaddr}" service "${service}")")${txtrst}"
+	mfakey=$(oathtool --base32 --totp "$(secret-tool lookup labmfatool 2016_01_10 username "${emailaddr}" service "${service}")")
+
+	if [[ $nullmfakey == "$mfakey" ]]; then
+	  echo -e "${bldred}Not Found:${txtrst} no MFA key found in keychain for ${txtylw}${emailaddr}${txtrst}@${txtylw}${service}${txtrst}"; 
+	  exit 3;
+
+	else
+	  echo -e "MFA token for ${txtylw}${emailaddr}${txtrst} @ ${txtylw}${service}${txtrst} : ${bldgrn}${mfakey}${txtrst}"
+	fi
 fi
