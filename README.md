@@ -12,8 +12,8 @@ Should work with most services that use totp, time base code generation.
 secret-tool, oathtool
 ###### Mac OsX
 secret-tool and oathtool are available under homebrew
-brew install oath-toolkit
-brew install libsecret
+ - brew install oath-toolkit
+ - brew install libsecret
 (one issue run into is unwritable /usr/local so possible solutions suggested here
 https://github.com/Homebrew/homebrew/issues/3930)
 
