@@ -16,3 +16,10 @@ brew install oath-toolkit
 brew install libsecret
 (one issue run into is unwritable /usr/local so possible solutions suggested here
 https://github.com/Homebrew/homebrew/issues/3930)
+
+
+TODO: 
+* test on Mac OsX - homebrew install and keychain functionality.
+* add zsh or oh-my-zsh autocomplete functions for manage keys
+* use better getopts in shell scripts.
+* add Mac OsX vs linux detection for porting functionality 
