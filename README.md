@@ -1,5 +1,12 @@
 # linuxcommands
-Little repo of funky commands, in development, bash python ruby or whatever.
+Little repo of funky commands, in development, bash python ruby or whatever. 
+
+mfatool is only tool right nowfirst tool, still to come(idea list):
+ * aws account cluster ssh wrapper
+ * some zsh plugins for github
+ 
+####Installation
+Unless the system gets much more advanced I suggest just cloning the repo, then symlink scripts to your path( eg. ~/bin ) as needed.
 
 
 ##Tools
