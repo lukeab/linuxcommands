@@ -8,7 +8,7 @@ if [[ $ENV == "" ]]; then
 fi
 AWSENVPREFIX=${AWSENVPREFIX:=""} #set this to your vpc environment prefix eg <company>-<Department>-<project>-
 #eg  export AWSENVPREFIX="acme-sales-widgets-"
-echo "AWSENVPREFIX = $AWSENVPREFIX"
+
 
 #ENVPREFIX and ENV will be used to make up a string matching what's in your ~/.aws/config  so make sure you include any sepreating characters.
 #Otherwise leave it blank so you can hit any env if you have plenty of non-prefixable environments you connect to.
