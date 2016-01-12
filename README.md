@@ -1,8 +1,8 @@
 # linuxcommands
 Little repo of funky commands, in development, bash python ruby or whatever. 
 
-mfatool is only tool right nowfirst tool, still to come(idea list):
- * aws account cluster ssh wrapper
+Tools still to come(idea list):
+ * aws account cluster ssh wrapper (done):white_check_mark:
  * some zsh plugins for github
  
 ####Installation
