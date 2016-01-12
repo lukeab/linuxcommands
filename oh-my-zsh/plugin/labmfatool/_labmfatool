@@ -1,0 +1,12 @@
+#compdef mfatool
+
+typeset -A opt_args
+local context state line
+
+_arguments -s S \
+  "(--store --help)-h[help text]" \
+  "(--store)--help[usage information]" \
+  "(--help)--store[writes new keys to the keychain]" \
+  && return 0
+
+return 1
