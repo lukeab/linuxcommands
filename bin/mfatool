@@ -29,7 +29,8 @@ Examples:
  $scriptname --help
  $scriptname luke github.com
  $scriptname --store luke github.com
-
+ $scriptname --all
+ 
 "
 
 nullmfakey=$(oathtool --base32 --totp "")
@@ -75,8 +76,6 @@ if [[ "$1" == "--store" ]]; then
 	emailaddr=$2
   service=$3
 fi
-
-
 
 if [[ "$emailaddr" == "" ]]; then
   echo -e "${bldred}Error:${txtrst} No user/email provided to identify the key."
