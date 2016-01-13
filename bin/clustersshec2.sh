@@ -5,7 +5,7 @@
 # 
 #
 
-SSHUSER=lukeashe
+AWSSSHUSER=${AWSSSHUSER:-"ec2-user"}
 
 AWSENVNAME=$1
 INSTANCEROLE=$2
@@ -19,9 +19,9 @@ if [[ $AWSENVNAME == "" ]]; then
 fi
 if [[ $INSTANCEROLE == "" ]];then
   set -x
-  $CLUSTERSSH -l $SSHUSER $(listec2instances.sh $AWSENVNAME |awk '{if (NR!=1) {print $2}}'|tr '\n' ' ')
+  $CLUSTERSSH -l $AWSSSHUSER $(listec2instances.sh $AWSENVNAME |awk '{if (NR!=1) {print $2}}'|tr '\n' ' ')
 else
   set -x
-  $CLUSTERSSH -l $SSHUSER $(listec2instances.sh $AWSENVNAME |grep $INSTANCEROLE |awk '{print $2}'|tr '\n' ' ')
+  $CLUSTERSSH -l $AWSSSHUSER $(listec2instances.sh $AWSENVNAME |grep $INSTANCEROLE |awk '{print $2}'|tr '\n' ' ')
 fi
 

@@ -19,6 +19,7 @@ Options:
  --help|-h        show this help/usage
  --list           List all keys in the secret-tool keychain managed by lab mfatool
  --store          store a value into the keychain (uses secret-tool to write to the keychain), you will be prompted for a password by the secret-tool
+ --all            Display all keys managed by mfatool at once in a line by line output
 
 Arguments:
  <user/email>     *required: the username or email address that identifies the key you want to use for the mfatool
@@ -31,6 +32,21 @@ Examples:
 
 "
 
+nullmfakey=$(oathtool --base32 --totp "")
+
+function get_mfatoken {
+
+	mfakey=$(oathtool --base32 --totp "$(secret-tool lookup labmfatool 2016_01_10 username "${1}" service "${2}")")
+
+	if [[ $nullmfakey == "$mfakey" ]]; then
+	  echo -e "${bldred}Not Found:${txtrst} no MFA key found in keychain for ${txtylw}${1}${txtrst}@${txtylw}${2}${txtrst}"; 
+	  exit 3;
+
+	else
+	  echo -e "MFA token for ${txtylw}${1}${txtrst} @ ${txtylw}${2}${txtrst} :\t${bldgrn}${mfakey}${txtrst}"
+	fi
+}
+
 if [[ "$1" == "--help"||"$1" == "-h" ]]; then
   echo "$usage";
   exit 0;
@@ -42,6 +58,15 @@ if [[ "$1" == "--list" ]]; then
 	exit 0;
 fi
 
+if [[ "$1" == "--all" ]]; then
+  ACCOUNTLIST=$(secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}')
+
+  while read -r line; do
+    get_mfatoken $line
+	done <<< "$ACCOUNTLIST"
+  
+  exit 0;
+fi
 
 emailaddr=$1
 service=$2
@@ -51,8 +76,6 @@ if [[ "$1" == "--store" ]]; then
   service=$3
 fi
 
-
-nullmfakey=$(oathtool --base32 --totp "")
 
 
 if [[ "$emailaddr" == "" ]]; then
@@ -70,13 +93,5 @@ fi
 if [[ "$1" == "--store" ]]; then
   secret-tool store --label "${emailaddr}@${service}" labmfatool 2016_01_10 username "${emailaddr}" service "${service}"
 else
-	mfakey=$(oathtool --base32 --totp "$(secret-tool lookup labmfatool 2016_01_10 username "${emailaddr}" service "${service}")")
-
-	if [[ $nullmfakey == "$mfakey" ]]; then
-	  echo -e "${bldred}Not Found:${txtrst} no MFA key found in keychain for ${txtylw}${emailaddr}${txtrst}@${txtylw}${service}${txtrst}"; 
-	  exit 3;
-
-	else
-	  echo -e "MFA token for ${txtylw}${emailaddr}${txtrst} @ ${txtylw}${service}${txtrst} : ${bldgrn}${mfakey}${txtrst}"
-	fi
+	get_mfatoken ${emailaddr} "${service}"
 fi
