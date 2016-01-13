@@ -1,5 +1,13 @@
 #!/bin/bash
 
+##
+#
+# TODO: 
+# lets use getopts to refine the options andparameter collection
+# add option to return a code with no additoin test (quiet mode) to make it useful for scripting
+# 
+#
+##
 txtrst='\e[0m'    # Text Reset
 txtylw='\e[0;33m' # Yellow
 bldgrn='\e[1;32m' # Bold Green
@@ -30,7 +38,7 @@ Examples:
  $scriptname luke github.com
  $scriptname --store luke github.com
  $scriptname --all
- 
+
 "
 
 nullmfakey=$(oathtool --base32 --totp "")
