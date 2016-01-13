@@ -19,7 +19,7 @@ scriptname="$(basename "$0")"
 usage="
 
 LAB mfatool
-Tool for managing multifactor authentication tokens through with the security of secret-tool and the keychain
+Tool for managing multifactor authentication tokens and generating access codes with the security of secret-tool and the keychain
 
 Usage: $scriptname [--help] <user/email> <service/domain>
 
