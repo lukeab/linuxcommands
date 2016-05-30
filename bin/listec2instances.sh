@@ -14,4 +14,12 @@ AWSENVPREFIX=${AWSENVPREFIX:=""} #set this to your vpc environment prefix eg <co
 #Otherwise leave it blank so you can hit any env if you have plenty of non-prefixable environments you connect to.
 #
 
-aws --profile ${AWSENVPREFIX}${ENV} ec2 describe-instances --output json --query "Reservations[*].Instances[*]" | jq  --raw-output '.[]|.[]|(if .Tags then (.Tags[]|select(.Key == "Service").Value) else empty end)+" " +.PrivateIpAddress+" " +.InstanceId+" " +.Placement.AvailabilityZone+" " +.PublicIpAddress' |sort -s|column -t | grep -E --color '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b'
+TMPFILE_LOC=/tmp/ec2instances_"${AWSENVPREFIX}${ENV}".json
+TMPFILE_TTL=60
+
+if [ ! -f "${TMPFILE_LOC}" ] || [ "$(find "${TMPFILE_LOC}" -mmin +"${TMPFILE_TTL}")" ] ; then
+  aws --profile "${AWSENVPREFIX}""${ENV}" ec2 describe-instances --output json --query "Reservations[*].Instances[*]" > "${TMPFILE_LOC}"
+fi
+
+
+cat ${TMPFILE_LOC} | jq  --raw-output '.[]|.[]|(if .Tags then (.Tags[]|select(.Key == "Service").Value) else empty end)+" " +.PrivateIpAddress+" " +.InstanceId+" " +.Placement.AvailabilityZone+" " +.PublicIpAddress' |sort -s|column -t | grep -E --color '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b'
