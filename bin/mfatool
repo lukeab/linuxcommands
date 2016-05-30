@@ -56,6 +56,18 @@ function get_mfatoken {
 	fi
 }
 
+function get_totp_keys {
+  totp_key=$(secret-tool lookup labmfatool 2016_01_10 username "${1}" service "${2}")
+
+  if [[ $nullmfakey == "$totp_key" ]]; then
+    echo -e "${bldred}Not Found:${txtrst} no TOTP key found in keychain for ${txtylw}${1}${txtrst}@${txtylw}${2}${txtrst}"; 
+    exit 3;
+
+  else
+    echo -e "TOTP key for ${txtylw}${1}${txtrst} @ ${txtylw}${2}${txtrst} :\t${bldgrn}${totp_key}${txtrst}"
+  fi
+}
+
 if [[ "$1" == "--help"||"$1" == "-h" ]]; then
   echo "$usage";
   exit 0;
@@ -74,6 +86,15 @@ if [[ "$1" == "--all" ]]; then
     get_mfatoken $line
 	done <<< "$ACCOUNTLIST"
   
+  exit 0;
+fi
+
+if [[ "$1" == "--export" ]]; then
+  ACCOUNTLIST=$(secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}')
+  while read -r line; do
+    get_totp_keys $line
+  done <<< "$ACCOUNTLIST"
+
   exit 0;
 fi
 
