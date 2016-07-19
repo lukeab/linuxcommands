@@ -8,10 +8,10 @@
 # 
 #
 ##
-txtrst='\e[0m'    # Text Reset
-txtylw='\e[0;33m' # Yellow
-bldgrn='\e[1;32m' # Bold Green
-bldred='\e[1;31m' # Bold Red
+txtrst='\033[0m'    # Text Reset
+txtylw='\033[0;33m' # Yellow
+bldgrn='\033[1;32m' # Bold Green
+bldred='\033[1;31m' # Bold Red
 
 
 scriptname="$(basename "$0")"
@@ -21,13 +21,14 @@ usage="
 LAB mfatool
 Tool for managing multifactor authentication tokens and generating access codes with the security of secret-tool and the keychain
 
-Usage: $scriptname [--help] <user/email> <service/domain>
+Usage: $scriptname [options|--help] <user/email> <service/domain>
 
 Options:
  --help|-h        show this help/usage
  --list           List all keys in the secret-tool keychain managed by lab mfatool
  --store          store a value into the keychain (uses secret-tool to write to the keychain), you will be prompted for a password by the secret-tool
  --all            Display all keys managed by mfatool at once in a line by line output
+ --qr             Display QR code for <user/email> <service/domain>
 
 Arguments:
  <user/email>     *required: the username or email address that identifies the key you want to use for the mfatool
@@ -39,6 +40,7 @@ Examples:
  $scriptname --store luke github.com
  $scriptname --all
 
+
 "
 
 nullmfakey=$(oathtool --base32 --totp "")
@@ -48,38 +50,49 @@ function get_mfatoken {
 	mfakey=$(oathtool --base32 --totp "$(secret-tool lookup labmfatool 2016_01_10 username "${1}" service "${2}")")
 
 	if [[ $nullmfakey == "$mfakey" ]]; then
-	  echo -e "${bldred}Not Found:${txtrst} no MFA key found in keychain for ${txtylw}${1}${txtrst}@${txtylw}${2}${txtrst}"; 
+	  printf "${bldred}Not Found:${txtrst} no MFA key found in keychain for ${txtylw}${1}${txtrst}@${txtylw}${2}${txtrst}\n"; 
 	  exit 3;
 
 	else
-	  echo -e "MFA token for ${txtylw}${1}${txtrst} @ ${txtylw}${2}${txtrst} :\t${bldgrn}${mfakey}${txtrst}"
+	  printf "MFA token for ${txtylw}${1}${txtrst} @ ${txtylw}${2}${txtrst} :\t${bldgrn}${mfakey}${txtrst}\n"
 	fi
 }
 
+function output_qr_utf8 {
+  #test for qrencode dependency
+  type qrencode >/dev/null 2>&1 || { printf >&2 "${bldred}ERROR: ${txtrst} I require 'qrencode' command but it's not installed or not in the PATH.  Aborting.\n"; exit 1; }
+  get_totp_keys "${emailaddr}" "${service}"
+  set -x
+  qrencode -t UTF8 "otpauth://totp/${service}:${emailaddr}?secrete=${mfakey}"
+  exit 0;
+  
+}
+
 function get_totp_keys {
+  set -x
   totp_key=$(secret-tool lookup labmfatool 2016_01_10 username "${1}" service "${2}")
 
   if [[ $nullmfakey == "$totp_key" ]]; then
-    echo -e "${bldred}Not Found:${txtrst} no TOTP key found in keychain for ${txtylw}${1}${txtrst}@${txtylw}${2}${txtrst}"; 
+    printf "${bldred}Not Found:${txtrst} no TOTP key found in keychain for ${txtylw}${1}${txtrst}@${txtylw}${2}${txtrst}\n"; 
     exit 3;
 
   else
-    echo -e "TOTP key for ${txtylw}${1}${txtrst} @ ${txtylw}${2}${txtrst} :\t${bldgrn}${totp_key}${txtrst}"
+    printf "TOTP key for ${txtylw}${1}${txtrst} @ ${txtylw}${2}${txtrst} :\t${bldgrn}${totp_key}${txtrst}\n"
   fi
 }
 
-if [[ "$1" == "--help"||"$1" == "-h" ]]; then
-  echo "$usage";
+if [[ "$1" == '--help'||"$1" == '-h' ]]; then
+  printf "$usage";
   exit 0;
 fi
 
-if [[ "$1" == "--list" ]]; then
+if [[ "$1" == '--list' ]]; then
 	secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}'
 
 	exit 0;
 fi
 
-if [[ "$1" == "--all" ]]; then
+if [[ "$1" == '--all' ]]; then
   ACCOUNTLIST=$(secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}')
 
   while read -r line; do
@@ -89,7 +102,7 @@ if [[ "$1" == "--all" ]]; then
   exit 0;
 fi
 
-if [[ "$1" == "--export" ]]; then
+if [[ "$1" == '--export' ]]; then
   ACCOUNTLIST=$(secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}')
   while read -r line; do
     get_totp_keys $line
@@ -101,24 +114,29 @@ fi
 emailaddr=$1
 service=$2
 
-if [[ "$1" == "--store" ]]; then
+if [ "$1" -eq '--store' ] || [ "$1" -eq '--qr']; then
 	emailaddr=$2
   service=$3
 fi
 
 if [[ "$emailaddr" == "" ]]; then
-  echo -e "${bldred}Error:${txtrst} No user/email provided to identify the key."
-  echo "$usage";
+  printf "${bldred}Error:${txtrst} No user/email provided to identify the key.\n"
+  printf "$usage";
   exit 1;
 fi
 
 if [[ "$service" == "" ]]; then
-  echo "${bldred}Error:${txtrst} No service/domain name provided to identify the key."
-  echo "$usage";
+  printf "${bldred}Error:${txtrst} No service/domain name provided to identify the key.\n"
+  printf "$usage";
   exit 2;
 fi
 
-if [[ "$1" == "--store" ]]; then
+if [[ "$1" == '--qr' ]]; then
+  shift
+  output_qr_utf8 ${emailaddr} "${service}"
+fi
+
+if [[ "$1" == '--store' ]]; then
   secret-tool store --label "${emailaddr}@${service}" labmfatool 2016_01_10 username "${emailaddr}" service "${service}"
 else
 	get_mfatoken ${emailaddr} "${service}"
