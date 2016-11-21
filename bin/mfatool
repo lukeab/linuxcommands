@@ -98,22 +98,16 @@ if [[ "$1" == '--list' ]]; then
 	exit 0;
 fi
 
-if [[ "$1" == '--all' ]]; then
+if [[ "$1" == '--all' ]] || [[ "$1" == '--export' ]]; then
   ACCOUNTLIST=$(secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}')
-
-  while read -r line; do
-    get_mfatoken ${line}
+  while read -r user domain; do
+    if [[ "$1" == '--all' ]]; then
+      get_mfatoken "${user}" "${domain}"
+    elif [[ "$1" == '--export' ]]; then
+      get_totp_keys "${user}" "${domain}"
+    fi
 	done <<< "$ACCOUNTLIST"
   
-  exit 0;
-fi
-
-if [[ "$1" == '--export' ]]; then
-  ACCOUNTLIST=$(secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}')
-  while read -r line; do
-    get_totp_keys ${line}
-  done <<< "$ACCOUNTLIST"
-
   exit 0;
 fi
 
