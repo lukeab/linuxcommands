@@ -1,5 +1,8 @@
 #!/bin/bash -e
 
+#Debug
+#set -x
+
 ##
 #
 # TODO: 
@@ -40,9 +43,9 @@ Arguments:
 Examples:
  $scriptname --help
  $scriptname luke github.com
- $scriptname --store luke github.com
+ $scriptname --store luke github.com  - this is followed by a prompt for a totp secret / password
  $scriptname --all
-
+ $scriptname --qr luke github.com
 
 "
 
@@ -99,7 +102,7 @@ if [[ "$1" == '--all' ]]; then
   ACCOUNTLIST=$(secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}')
 
   while read -r line; do
-    get_mfatoken "${line}"
+    get_mfatoken ${line}
 	done <<< "$ACCOUNTLIST"
   
   exit 0;
@@ -108,7 +111,7 @@ fi
 if [[ "$1" == '--export' ]]; then
   ACCOUNTLIST=$(secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}')
   while read -r line; do
-    get_totp_keys "${line}"
+    get_totp_keys ${line}
   done <<< "$ACCOUNTLIST"
 
   exit 0;
