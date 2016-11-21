@@ -22,4 +22,4 @@ if [ ! -f "${TMPFILE_LOC}" ] || [ "$(find "${TMPFILE_LOC}" -mmin +"${TMPFILE_TTL
 fi
 
 
-cat ${TMPFILE_LOC} | jq  --raw-output '.[]|.[]|(if .Tags then (.Tags[]|select(.Key == "Service").Value) else empty end)+" " +.PrivateIpAddress+" " +.InstanceId+" " +.Placement.AvailabilityZone+" " +.PublicIpAddress' |sort -s|column -t | grep -E --color '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b'
+cat ${TMPFILE_LOC} | jq  --raw-output '.[]|.[]|(if .Tags then (.Tags[]|select(.Key == "Name").Value) else empty end)+" " +(.NetworkInterfaces[0]|.PrivateIpAddress) + " " + (.NetworkInterfaces[1]|.PrivateIpAddress)  + " " +.InstanceId+" " +.Placement.AvailabilityZone+" " +.PublicIpAddress' |sort -s|column -t | grep -E --color '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b'
