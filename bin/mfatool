@@ -1,5 +1,5 @@
-#!/bin/bash
-
+#!/bin/bash -e
+set -x
 ##
 #
 # TODO: 
@@ -51,17 +51,17 @@ function get_mfatoken {
 	mfakey=$(oathtool --base32 --totp "$(secret-tool lookup labmfatool 2016_01_10 username "${1}" service "${2}")")
 
 	if [[ $nullmfakey == "$mfakey" ]]; then
-	  printf "${bldred}Not Found:${txtrst} no MFA key found in keychain for ${txtylw}${1}${txtrst}@${txtylw}${2}${txtrst}\n"; 
+	  printf "%sNot Found:%s no MFA key found in keychain for %s%%ss@%s%s%s\n" "${bldred}" "${txtrst}" "${txtylw}" "${1}" "${txtrst}" "${txtylw}" "${2}" "${txtrst}"; 
 	  exit 3;
 
 	else
-	  printf "MFA token for ${txtylw}${1}${txtrst} @ ${txtylw}${2}${txtrst} :\t${bldgrn}${mfakey}${txtrst}\n"
+	  printf "MFA token for %s%s%s @ %s%s%s :\t%s%s%s\n" "${txtylw}" "${1}" "${txtrst}" "${txtylw}" "${2}" "${txtrst}" "${bldgrn}" "${mfakey}" "${txtrst}";
 	fi
 }
 
 function output_qr_utf8 {
   #test for qrencode dependency
-  type qrencode >/dev/null 2>&1 || { printf >&2 "${bldred}ERROR: ${txtrst} I require ${txtylw}'qrencode'${txtrst} command but it's not installed or not in the PATH.  Aborting.\n"; exit 1; }
+  type qrencode >/dev/null 2>&1 || { printf >&2 "%sERROR: %s I require %s'qrencode'%s command but it's not installed or not in the PATH.  Aborting.\n" "${bldred}" "${txtrst}" "${txtylw}" "${txtrst}"; exit 1; }
   #type qrencode >/dev/null 2>&1 || { printf >&2 "${bldred}ERROR: ${txtrst} I require 'qrencode' command but it's not installed or not in the PATH.  Aborting.\n"; exit 1; }
   get_totp_keys "${1}" "${2}"
   qrencode -t UTF8 "otpauth://totp/${2}:${1}?secret=${totp_key}"
@@ -73,16 +73,16 @@ function get_totp_keys {
   totp_key=$(secret-tool lookup labmfatool 2016_01_10 username "${1}" service "${2}")
 
   if [[ $nullmfakey == "$totp_key" ]]; then
-    printf "${bldred}Not Found:${txtrst} no TOTP key found in keychain for ${txtylw}${1}${txtrst}@${txtylw}${2}${txtrst}\n"; 
+    printf "%sNot Found:%s no TOTP key found in keychain for %s%s%s@%s%s%s\n" "${bldred}" "${txtrst}" "${txtylw}" "${1}" "${txtrst}" "${txtylw}" "${2}" "${txtrst}"; 
     exit 3;
 
   else
-    printf "TOTP key for ${txtylw}${1}${txtrst} @ ${txtylw}${2}${txtrst} :\t${bldgrn}${totp_key}${txtrst}\n"
+    printf "TOTP key for %s%s%s @ %s%s%s :\t%s%s%s\n" "${txtylw}" "${1}" "${txtrst}" "${txtylw}" "${2}" "${txtrst}" "${bldgrn}" "${totp_key}" "${txtrst}"
   fi
 }
 
 if [[ "$1" == '--help'||"$1" == '-h' ]]; then
-  printf "$usage";
+  printf "%s" "${usage}";
   exit 0;
 fi
 
@@ -96,7 +96,7 @@ if [[ "$1" == '--all' ]]; then
   ACCOUNTLIST=$(secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}')
 
   while read -r line; do
-    get_mfatoken $line
+    get_mfatoken "${line}"
 	done <<< "$ACCOUNTLIST"
   
   exit 0;
@@ -105,7 +105,7 @@ fi
 if [[ "$1" == '--export' ]]; then
   ACCOUNTLIST=$(secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}')
   while read -r line; do
-    get_totp_keys $line
+    get_totp_keys "${line}"
   done <<< "$ACCOUNTLIST"
 
   exit 0;
@@ -115,29 +115,29 @@ emailaddr=$1
 service=$2
 
 if [[ "$1" -eq '--store' ]] || [[ "$1" -eq '--qr' ]]; then
-	emailaddr=$2
+  emailaddr=$2
   service=$3
 fi
 
 if [[ "$emailaddr" == "" ]]; then
-  printf "${bldred}Error:${txtrst} No user/email provided to identify the key.\n"
-  printf "$usage";
+  printf "%sError:%s No user/email provided to identify the key.\n" "${bldred}" "${txtrst}"
+  printf "%s" "${usage}";
   exit 1;
 fi
 
 if [[ "$service" == "" ]]; then
-  printf "${bldred}Error:${txtrst} No service/domain name provided to identify the key.\n"
-  printf "$usage";
+  printf "%sError:%s No service/domain name provided to identify the key.\n" "${bldred}" "${txtrst}"
+  printf "%s" "${usage}";
   exit 2;
 fi
 
 if [[ "$1" == '--qr' ]]; then
   shift
-  output_qr_utf8 ${emailaddr} "${service}"
+  output_qr_utf8 "${emailaddr}" "${service}"
 fi
 
 if [[ "$1" == '--store' ]]; then
   secret-tool store --label "${emailaddr}@${service}" labmfatool 2016_01_10 username "${emailaddr}" service "${service}"
 else
-	get_mfatoken ${emailaddr} "${service}"
+	get_mfatoken "${emailaddr}" "${service}"
 fi
