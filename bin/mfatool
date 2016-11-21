@@ -1,5 +1,5 @@
 #!/bin/bash -e
-set -x
+
 ##
 #
 # TODO: 
@@ -8,11 +8,14 @@ set -x
 # 
 #
 ##
-txtrst='\033[0m'    # Text Reset
-txtylw='\033[0;33m' # Yellow
-bldgrn='\033[1;32m' # Bold Green
-bldred='\033[1;31m' # Bold Red
 
+txtrst=$(tput sgr0)    # Reset text
+txtbld=$(tput bold)    # Bold text
+txtylw=$(tput setaf 3) # Yellow
+#txtgrn=$(tput setaf 2) # Green text
+#txtred=$(tput setaf 1) # Red text
+bldgrn=${txtbld}$(tput setaf 2) # Bold Green
+bldred=${txtbld}$(tput setaf 1) # Bold Red
 
 scriptname="$(basename "$0")"
 
@@ -50,8 +53,8 @@ function get_mfatoken {
 
 	mfakey=$(oathtool --base32 --totp "$(secret-tool lookup labmfatool 2016_01_10 username "${1}" service "${2}")")
 
-	if [[ $nullmfakey == "$mfakey" ]]; then
-	  printf "%sNot Found:%s no MFA key found in keychain for %s%%ss@%s%s%s\n" "${bldred}" "${txtrst}" "${txtylw}" "${1}" "${txtrst}" "${txtylw}" "${2}" "${txtrst}"; 
+	if [[ $nullmfakey == "${mfakey}" ]]; then
+	  printf "%sNot Found:%s no MFA key found in keychain for %s%s%s@%s%s%s\n" "${bldred}" "${txtrst}" "${txtylw}" "${1}" "${txtrst}" "${txtylw}" "${2}" "${txtrst}"; 
 	  exit 3;
 
 	else
@@ -114,7 +117,7 @@ fi
 emailaddr=$1
 service=$2
 
-if [[ "$1" -eq '--store' ]] || [[ "$1" -eq '--qr' ]]; then
+if [[ "$1" == '--store' ]] || [[ "$1" == '--qr' ]]; then
   emailaddr=$2
   service=$3
 fi
