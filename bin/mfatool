@@ -53,17 +53,19 @@ Examples:
 nullmfakey=$(oathtool --base32 --totp "")
 mfakey=''
 totp_key=''
+
+function checknullmfakey {
+  if [[ $nullmfakey == "${1}" ]]; then
+    printf "%sNot Found:%s no MFA key found in keychain for %s%s%s@%s%s%s\n" "${bldred}" "${txtrst}" "${txtylw}" "${emailaddr}" "${txtrst}" "${txtylw}" "${service}" "${txtrst}"; 
+    exit 3;
+  fi
+}
+
 function get_mfatoken {
 
   mfakey=$(oathtool --base32 --totp "$(secret-tool lookup labmfatool 2016_01_10 username "${1}" service "${2}")")
-
-  if [[ $nullmfakey == "${mfakey}" ]]; then
-    printf "%sNot Found:%s no MFA key found in keychain for %s%s%s@%s%s%s\n" "${bldred}" "${txtrst}" "${txtylw}" "${1}" "${txtrst}" "${txtylw}" "${2}" "${txtrst}"; 
-    exit 3;
-
-  else
-    printf "MFA token for %s%s%s @ %s%s%s :\t%s%s%s\n" "${txtylw}" "${1}" "${txtrst}" "${txtylw}" "${2}" "${txtrst}" "${bldgrn}" "${mfakey}" "${txtrst}";
-  fi
+  checknullmfakey "${mfakey}"
+  printf "MFA token for %s%s%s @ %s%s%s :\t%s%s%s\n" "${txtylw}" "${1}" "${txtrst}" "${txtylw}" "${2}" "${txtrst}" "${bldgrn}" "${mfakey}" "${txtrst}";
 }
 
 function output_qr_utf8 {
@@ -78,7 +80,7 @@ function output_qr_utf8 {
 function get_totp_keys {
   totp_key=$(secret-tool lookup labmfatool 2016_01_10 username "${1}" service "${2}")
 
-  if [[ $nullmfakey == "$totp_key" ]]; then
+  if [[ "${totp_key}" == "" ]]; then
     printf "%sNot Found:%s no TOTP key found in keychain for %s%s%s@%s%s%s\n" "${bldred}" "${txtrst}" "${txtylw}" "${1}" "${txtrst}" "${txtylw}" "${2}" "${txtrst}"; 
     exit 3;
 
@@ -87,62 +89,57 @@ function get_totp_keys {
   fi
 }
 
-if [[ "$1" == '--help'||"$1" == '-h' ]]; then
-  printf "%s" "${usage}";
-  exit 0;
-fi
+function checkparams {
+  if [[ "$emailaddr" == "" ]]; then
+    printf "%sError:%s No user/email provided to identify the key.\n" "${bldred}" "${txtrst}"
+    printf "%s" "${usage}";
+    exit 1;
+  fi
 
-if [[ "$1" == '--list' ]]; then
-  secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}'
-
-  exit 0;
-fi
-
-if [[ "$1" == '--all' ]] || [[ "$1" == '--export' ]]; then
-  ACCOUNTLIST=$(secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}')
-  while read -r user domain; do
-    if [[ "$1" == '--all' ]]; then
-      get_mfatoken "${user}" "${domain}"
-    elif [[ "$1" == '--export' ]]; then
-      get_totp_keys "${user}" "${domain}"
-    fi
-  done <<< "$ACCOUNTLIST"
-  
-  exit 0;
-fi
-
-emailaddr=$1
-service=$2
+  if [[ "$service" == "" ]]; then
+    printf "%sError:%s No service/domain name provided to identify the key.\n" "${bldred}" "${txtrst}"
+    printf "%s" "${usage}";
+    exit 2;
+  fi
+}
 
 if [[ "$1" == '--store' ]] || [[ "$1" == '--qr' ]] || [[ "$1" == '--remove' ]]; then
   emailaddr=$2
   service=$3
-fi
-
-if [[ "$emailaddr" == "" ]]; then
-  printf "%sError:%s No user/email provided to identify the key.\n" "${bldred}" "${txtrst}"
-  printf "%s" "${usage}";
-  exit 1;
-fi
-
-if [[ "$service" == "" ]]; then
-  printf "%sError:%s No service/domain name provided to identify the key.\n" "${bldred}" "${txtrst}"
-  printf "%s" "${usage}";
-  exit 2;
-fi
-
-if [[ "$1" == '--qr' ]]; then
-  shift
-  output_qr_utf8 "${emailaddr}" "${service}"
-fi
-
-if [[ "$1" == '--remove' ]]; then
-  secret-tool clear labmfatool 2016_01_10 username "${emailaddr}" service "${service}"
-  exit 0;
-fi
-
-if [[ "$1" == '--store' ]]; then
-  secret-tool store --label "${emailaddr}@${service}" labmfatool 2016_01_10 username "${emailaddr}" service "${service}"
+  checkparams
 else
-  get_mfatoken "${emailaddr}" "${service}"
+  emailaddr=$1
+  service=$2
 fi
+
+case "$1" in
+  --help | -h )
+      printf "%s" "${usage}"
+      ;;
+  --list)
+      secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}'
+      ;;
+  --all | --export )
+      ACCOUNTLIST=$(secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}')
+      while read -r user domain; do
+        if [[ "$1" == '--all' ]]; then
+          get_mfatoken "${user}" "${domain}"
+        elif [[ "$1" == '--export' ]]; then
+          get_totp_keys "${user}" "${domain}"
+        fi
+      done <<< "$ACCOUNTLIST"
+      ;;
+  --qr)
+      output_qr_utf8 "${emailaddr}" "${service}"
+      ;;
+  --remove)
+      secret-tool clear labmfatool 2016_01_10 username "${emailaddr}" service "${service}"
+      ;;
+  --store)
+      secret-tool store --label "${emailaddr}@${service}" labmfatool 2016_01_10 username "${emailaddr}" service "${service}"
+      ;;
+  *)
+    checkparams
+    get_mfatoken "${emailaddr}" "${service}"
+    ;;
+esac
