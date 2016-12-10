@@ -103,7 +103,7 @@ function checkparams {
   fi
 }
 
-if [[ "$1" == '--store' ]] || [[ "$1" == '--qr' ]] || [[ "$1" == '--remove' ]]; then
+if [[ "$1" == '--store' || "$1" == '--qr' || "$1" == '--remove' ]]; then
   emailaddr=$2
   service=$3
   checkparams
@@ -120,14 +120,14 @@ case "$1" in
       secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}'
       ;;
   --all | --export )
-      ACCOUNTLIST=$(secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}')
+      ## Try combining the line 130 change |grep|sed|awk into a single |awk or |sed
       while read -r user domain; do
         if [[ "$1" == '--all' ]]; then
           get_mfatoken "${user}" "${domain}"
         elif [[ "$1" == '--export' ]]; then
           get_totp_keys "${user}" "${domain}"
         fi
-      done <<< "$ACCOUNTLIST"
+      done < <(secret-tool search --all labmfatool 2016_01_10 2>/dev/null |grep "label = "|sed 's/\(.*\)@/\1 /' |awk '{print $3 " " $4}')
       ;;
   --qr)
       output_qr_utf8 "${emailaddr}" "${service}"
