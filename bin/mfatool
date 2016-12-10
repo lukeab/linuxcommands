@@ -20,7 +20,7 @@ txtylw=$(tput setaf 3) # Yellow
 bldgrn=${txtbld}$(tput setaf 2) # Bold Green
 bldred=${txtbld}$(tput setaf 1) # Bold Red
 
-scriptname="$(basename "$0")"
+scriptname="$(basename "${BASH_SOURCE[0]}")"
 
 usage="
 
