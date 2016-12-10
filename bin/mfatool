@@ -24,7 +24,7 @@ scriptname="$(basename "$0")"
 
 usage="
 
-LAB mfatool
+mfatool
 Tool for managing multifactor authentication tokens and generating access codes with the security of secret-tool and the keychain
 
 Usage: $scriptname [options|--help] <user/email> <service/domain>
@@ -33,6 +33,7 @@ Options:
  --help|-h        show this help/usage
  --list           List all keys in the secret-tool keychain managed by lab mfatool
  --store          store a value into the keychain (uses secret-tool to write to the keychain), you will be prompted for a password by the secret-tool
+ --remove         Remove a key from the keychain <user/email> <service/domain>
  --all            Display all keys managed by mfatool at once in a line by line output
  --qr             Display QR code for <user/email> <service/domain>
 
@@ -114,7 +115,7 @@ fi
 emailaddr=$1
 service=$2
 
-if [[ "$1" == '--store' ]] || [[ "$1" == '--qr' ]]; then
+if [[ "$1" == '--store' ]] || [[ "$1" == '--qr' ]] || [[ "$1" == '--remove' ]]; then
   emailaddr=$2
   service=$3
 fi
@@ -136,8 +137,15 @@ if [[ "$1" == '--qr' ]]; then
   output_qr_utf8 "${emailaddr}" "${service}"
 fi
 
+if [[ "$1" == '--remove' ]]; then
+  secret-tool clear labmfatool 2016_01_10 username "${emailaddr}" service "${service}"
+  exit 0;
+fi
+
 if [[ "$1" == '--store' ]]; then
   secret-tool store --label "${emailaddr}@${service}" labmfatool 2016_01_10 username "${emailaddr}" service "${service}"
 else
 	get_mfatoken "${emailaddr}" "${service}"
 fi
+
+  
